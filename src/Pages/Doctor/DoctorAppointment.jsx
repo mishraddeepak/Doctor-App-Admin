@@ -8,49 +8,119 @@ export default function AllAppointmentsUI() {
     useContext(DoctorContext);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  // const [searchQuery, setSearchQuery] = useState("");
   const [prescriptions, setPrescriptions] = useState({}); // Track prescriptions per appointment
   const [instructions, setInstructions] = useState({}); // Track instructions per appointment
   const [appointments, setAppointments] = useState([]);
   const [givenTreatment, setGivenTreatment] = useState([]);
   const [selectedTreatmentId, setSelectedTreatmentId] = useState("");
   const [treatmentFee, setTreatmentFee] = useState("");
+  const [fetchedTreatments, setFetchedTreatments] = useState({});
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredTreatments, setFilteredTreatments] = useState([]);
+  const [selectedTreatments, setSelectedTreatments] = useState([]);
+  const [billingPrice, setBillingPrice] = useState("");
+  const [treatmentDataForBackend, setTreatmentDataForBackend] = useState([]);
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.trim() === "") {
+      setFilteredTreatments([]);
+      return;
+    }
+    const filtered = fetchedTreatments.filter((treatment) =>
+      treatment.treatmentName.toLowerCase().includes(query.toLowerCase())
+    );
+    console.log(filtered);
+    setFilteredTreatments(filtered);
+  };
+
+  const handleSelectTreatment = (treatment) => {
+    const newTreatment = {
+      ...treatment,
+      billingPrice: treatment.actualPrice,
+    };
+    setSelectedTreatments((prev) => [...prev, newTreatment]);
+    setTreatmentDataForBackend((prev) => [
+      ...prev,
+      {
+        treatment: treatment._id,
+        billingPrice: treatment.actualPrice,
+      },
+    ]);
+    setSearchQuery("");
+    setFilteredTreatments([]);
+  };
+  console.log(selectedTreatments);
+  console.log(billingPrice);
+
+  const handleRemoveTreatment = (index) => {
+    setSelectedTreatments((prev) => prev.filter((_, i) => i !== index));
+    setTreatmentDataForBackend((prev) => prev.filter((_, i) => i !== index));
+  };
+  const handleBillingPriceChange = (index, value) => {
+    setSelectedTreatments((prev) =>
+      prev.map((treatment, i) =>
+        i === index ? { ...treatment, billingPrice: value } : treatment
+      )
+    );
+    setTreatmentDataForBackend((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, billingPrice: value } : item
+      )
+    );
+  };
+  console.log(selectedTreatments);
 
   useEffect(() => {
     getDoctorDetails();
   }, []);
 
-  useEffect(() => {
-    const fetchAppointment = async () => {
-      try {
-        const { data } = await axios.get(
-          `${backendUrl}/api/doctor/doctor-appointments/${localStorage.getItem(
-            "userId"
-          )}`
-        );
-        if (data.success) {
-          setAppointments(data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching appointments:", error);
+  const fetchAppointment = async () => {
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/doctor/doctor-appointments/${localStorage.getItem(
+          "userId"
+        )}`
+      );
+      if (data.success) {
+        setAppointments(data.data);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    }
+  };
+  useEffect(() => {
     fetchAppointment();
   }, [backendUrl]);
+//  fetching all treatment
+  useEffect(() => {
+    const allTreatments = async () => {
+      try {
+        const { data } = await axios.get(
+          `${backendUrl}/api/admin/all-treatment`
+        );
+        console.log(data);
+        if (data.success) {
+          setFetchedTreatments(data.data);
+        } else {
+          console.error("Failed to fetch treatments:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching treatments:", error.message);
+      }
+    };
+    allTreatments();
+  }, []);
 
-  // Function to handle medicalType
   const handleMedicalType = async (medicalType) => {
-    console.log("MedicalType:", medicalType); // Log the value for testing
-    const { data } = await axios.get(
-      `${backendUrl}/api/doctor/search-treatments/${medicalType}`
-    );
-    console.log(data);
+    console.log("MedicalType:", medicalType);
     if (data.success) {
       setGivenTreatment(data.data);
     }
   };
-
-  // Automatically trigger the function when an appointment is expanded
   useEffect(() => {
     if (expandedIndex !== null) {
       const expandedAppointment = appointments[expandedIndex];
@@ -62,24 +132,6 @@ export default function AllAppointmentsUI() {
       setGivenTreatment([]);
     }
   }, [expandedIndex, appointments]);
-
-  // Handle treatment selection
-  const handleTreatmentChange = (e) => {
-    const selectedId = e.target.value;
-    setSelectedTreatmentId(selectedId);
-
-    // Find the selected treatment
-    const selectedTreatment = givenTreatment.find(
-      (treatment) => treatment._id === selectedId
-    );
-
-    // Set the treatmentFee to the selected treatment's actualPrice
-    if (selectedTreatment) {
-      setTreatmentFee(selectedTreatment.actualPrice);
-    } else {
-      setTreatmentFee(""); // Reset if no treatment is selected
-    }
-  };
 
   const toggleView = (patientId) => {
     const filteredAppointment = docProfile?.doctor?.appointments.filter(
@@ -129,21 +181,23 @@ export default function AllAppointmentsUI() {
 
   const handleSubmit = async (patientId, appointmentId) => {
     const prescriptionData = {
-      prescriptions: prescriptions[appointmentId] || [],
-      instruction: instructions[appointmentId] || "",
+      // prescriptions: prescriptions[appointmentId] || [],
+      // instruction: instructions[appointmentId] || "",
       appointmentId,
-      treatmentTaken:givenTreatment,
+      selectedTreatments: treatmentDataForBackend,
       status: "Completed",
     };
-
+    console.log(prescriptionData);
     try {
       const { data } = await axios.put(
         `${backendUrl}/api/doctor/update-appoint-with-doctor/${appointmentId}`,
         prescriptionData
       );
-      console.log(data)
-      if (data.success) {
+      console.log(data);
+      if (data.message === "Appointment status updated successfully") {
         toast.success(data.message);
+        fetchAppointment();
+        getDoctorDetails();
         setPrescriptions((prev) => ({ ...prev, [appointmentId]: [] }));
         setInstructions((prev) => ({ ...prev, [appointmentId]: "" }));
       }
@@ -151,9 +205,9 @@ export default function AllAppointmentsUI() {
       console.error("Error submitting prescription:", error);
     }
   };
-
+  console.log(treatmentDataForBackend);
   let serialNumber = 1;
-
+  console.log(appointments);
   return (
     <div className="w-full max-w-6xl m-5 ">
       <p className="mb-3 text-lg font-medium">All Appointments</p>
@@ -197,7 +251,15 @@ export default function AllAppointmentsUI() {
                 <p className="text-blue-700">{appointment?.Appointment_Id}</p>
 
                 <p>
-                  {appointment.selectedDate}, {appointment.slotTime}
+                  {new Date(appointment.selectedDate).toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }
+                  )}
+                  , {appointment.slotTime}
                 </p>
 
                 <p
@@ -225,12 +287,11 @@ export default function AllAppointmentsUI() {
                   </button>
                 </div>
               </div>
-
               {/* Expanded Section */}
               {expandedIndex === rowIndex && (
-                <div className="col-span-full mt-4 p-4 bg-gray-50 rounded-md text-sm text-gray-600 ">
+                <div className="col-span-full mt-4 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg text-sm text-gray-700 shadow-2xl">
                   <div className="mb-4">
-                    <p className="font-medium">
+                    <p className="font-medium text-gray-700 mb-3">
                       Contact No:{" "}
                       <span>
                         {patient?.phone || "No additional details provided."}
@@ -239,7 +300,6 @@ export default function AllAppointmentsUI() {
                     <p className="font-medium">
                       Symptoms: <span>{appointment.symptoms}</span>
                     </p>
-
                     {/* Reports */}
                     <div>
                       <p className="font-medium">
@@ -251,22 +311,21 @@ export default function AllAppointmentsUI() {
                           View
                         </span>
                       </p>
-
                       {isOpen && (
                         <div className="mt-4 border p-4 rounded-md bg-gray-100 shadow-md">
                           <h3 className="text-lg font-bold mb-2">Reports</h3>
-                          {appointment.patientReports?.length > 0 ? (
+                          {appointment.uploadedFiles?.length > 0 ? (
                             <ul className="list-disc pl-6">
-                              {appointment.patientReports.map(
+                              {appointment.uploadedFiles.map(
                                 (report, index) => (
                                   <li key={index} className="mb-1">
                                     <a
-                                      href={`${backendUrl}/middlewares/${report.filePath}`}
+                                      href={`${report.filePath}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-blue-500 hover:underline"
                                     >
-                                      {report.fileName}
+                                      {report.customName}
                                     </a>
                                   </li>
                                 )
@@ -287,7 +346,63 @@ export default function AllAppointmentsUI() {
                         </div>
                       )}
                     </div>
-
+                    {/* Medical type */}
+                    {appointment.medicalType && (
+                      <p className="font-medium">
+                        Medical Type: <span>{appointment.medicalType}</span>
+                      </p>
+                    )}
+                    {/* doctor fee */}
+                    {appointment.docFee && (
+                      <p className="font-medium">
+                        Doctor Fee:{" "}
+                        <span className="text-green-600">
+                          {appointment.docFee}
+                        </span>
+                      </p>
+                    )}
+                    {/* Already given Treatments  */}
+                    {appointment.treatmentsTaken &&
+                      appointment.treatmentsTaken.length > 0 && (
+                        <table className="w-full border-collapse border border-gray-300 mt-4">
+                          <thead>
+                            <tr className="bg-gray-200">
+                              <th className="border border-gray-300 px-4 py-2">
+                                #
+                              </th>
+                              <th className="border border-gray-300 px-4 py-2">
+                                Treatment Name
+                              </th>
+                              <th className="border border-gray-300 px-4 py-2">
+                                Billing Price
+                              </th>
+                              <th className="border border-gray-300 px-4 py-2">
+                                Actual Price
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {appointment?.treatmentsTaken?.map(
+                              (treatment, index) => (
+                                <tr key={index} className="text-center">
+                                  <td className="border border-gray-300 px-4 py-2">
+                                    {index + 1}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2">
+                                    {treatment.treatment.treatmentName}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                    {treatment.billingPrice}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                    {treatment.treatment.actualPrice}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      )}
                     {/* Already given prescription */}
                     {appointment.prescriptions?.length > 0 && (
                       <div className="mt-4">
@@ -320,179 +435,232 @@ export default function AllAppointmentsUI() {
                         </table>
                       </div>
                     )}
-
                     {/* Already Given Instruction */}
                     {appointment?.instruction && (
                       <p className="font-medium">
                         Instructions: <span>{appointment.instruction}</span>
                       </p>
                     )}
-
-                    {/* MedicalType and Treatments */}
                     {(appointment.status === "Accepted" ||
                       appointment.status === "Pending") && (
-                      <div className="mt-4">
-                        
-                        <p className="font-medium text-sm mb-2">MedicalType:</p>
-                        <input
-                          value={appointment.medicalType}
-                          rows="4"
-                          className="w-1/2 border px-3 py-2 rounded-md"
-                          readOnly
-                        />
-                       
-                        
-                        <p className="font-medium text-sm mb-2">Treatments:</p>
-                        <select
-                          className="w-1/2 border px-3 py-2 rounded-md mb-4"
-                          value={selectedTreatmentId}
-                          onChange={handleTreatmentChange}
-                        >
-                          <option value="">Select a treatment</option>
-                          {givenTreatment?.map((treatment) => (
-                            <option key={treatment._id} value={treatment._id}>
-                              {treatment.treatmentName}
-                            </option>
-                          ))}
-                        </select>
-                        
-                        <p className="font-medium text-sm mb-2">Treatment Fee:</p>
-                        <input
-                          type="text"
-                          value={treatmentFee}
-                          onChange={(e) => setTreatmentFee(e.target.value)}
-                          className="w-1/2 border px-3 py-2 rounded-md"
-                          placeholder="Enter treatment fee"
-                        />
-                        
-                      </div>
-                    )}
-
-                    {/* Prescription Table */}
-                    {(appointment.status === "Accepted" ||
-                      appointment.status === "Pending") && (
-                      <div className="mt-4">
-                        <p className="font-medium text-sm">Prescription:</p>
-                        <table className="mt-2 w-full table-auto text-sm border-collapse border border-gray-300">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th className="border-b px-4 py-2">Medicine</th>
-                              <th className="border-b px-4 py-2">Dose</th>
-                              <th className="border-b px-4 py-2">Timing</th>
-                              <th className="border-b px-4 py-2">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(prescriptions[appointment._id] || []).map(
-                              (prescription, index) => (
-                                <tr key={index} className="hover:bg-gray-100">
-                                  <td className="border-b px-4 py-2">
-                                    <input
-                                      type="text"
-                                      value={prescription.medicine}
-                                      onChange={(e) =>
-                                        handlePrescriptionChange(
-                                          appointment._id,
-                                          index,
-                                          "medicine",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="w-full border px-2 py-1"
-                                    />
-                                  </td>
-                                  <td className="border-b px-4 py-2">
-                                    <input
-                                      type="text"
-                                      value={prescription.dose}
-                                      onChange={(e) =>
-                                        handlePrescriptionChange(
-                                          appointment._id,
-                                          index,
-                                          "dose",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="w-full border px-2 py-1"
-                                    />
-                                  </td>
-                                  <td className="border-b px-4 py-2">
-                                    <input
-                                      type="text"
-                                      value={prescription.timing}
-                                      onChange={(e) =>
-                                        handlePrescriptionChange(
-                                          appointment._id,
-                                          index,
-                                          "timing",
-                                          e.target.value
-                                        )
-                                      }
-                                      className="w-full border px-2 py-1"
-                                    />
-                                  </td>
-                                  <td className="border-b px-4 py-2">
-                                    <button
-                                      onClick={() =>
-                                        removePrescriptionRow(
-                                          appointment._id,
-                                          index
-                                        )
-                                      }
-                                      className="text-red-600 hover:text-red-800"
-                                    >
-                                      Delete
-                                    </button>
-                                  </td>
-                                </tr>
-                              )
+                      <>
+                        {/* MedicalType and Treatments */}
+                        <div className="w-full">
+                          {/* Searchable Input */}
+                          <div className="relative w-1/2">
+                            <p className="font-medium">Search For Treatment:</p>
+                            <input
+                              type="text"
+                              className="w-full border px-3 py-2 rounded-md mb-2"
+                              placeholder="Search for a treatment..."
+                              value={searchQuery}
+                              onChange={handleSearchChange}
+                            />
+                            {filteredTreatments.length > 0 && (
+                              <ul className="absolute left-0 border border-gray-300 rounded-md w-full bg-white z-10 max-h-40 overflow-y-auto shadow-lg">
+                                {filteredTreatments.map((treatment) => (
+                                  <li
+                                    key={treatment._id}
+                                    className="px-3 py-2 cursor-pointer hover:bg-gray-200"
+                                    onClick={() =>
+                                      handleSelectTreatment(treatment)
+                                    }
+                                  >
+                                    {treatment.treatmentName}
+                                  </li>
+                                ))}
+                              </ul>
                             )}
-                          </tbody>
-                        </table>
-                        <button
-                          onClick={() => addPrescriptionRow(appointment._id)}
-                          className="text-sm text-blue-600 hover:underline mt-4"
-                        >
-                          + Add Medicine
-                        </button>
-                      </div>
+                          </div>
+                          {/* Selected Treatments Table */}
+                          {selectedTreatments.length > 0 && (
+                            <table className="mt-4 w-full border-collapse border border-gray-300">
+                              <thead>
+                                <tr className="bg-gray-200">
+                                  <th className="border border-gray-300 px-4 py-2">
+                                    Treatment Name
+                                  </th>
+                                  <th className="border border-gray-300 px-4 py-2">
+                                    Actual Price
+                                  </th>
+                                  <th className="border border-gray-300 px-4 py-2">
+                                    Billing Price
+                                  </th>
+                                  <th className="border border-gray-300 px-4 py-2">
+                                    Remove
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {selectedTreatments.map((treatment, index) => (
+                                  <tr key={index} className="text-center">
+                                    <td className="border border-gray-300 px-4 py-2">
+                                      {treatment.treatmentName}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                      {treatment.actualPrice}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-2 text-green-600">
+                                      <input
+                                        type="text"
+                                        value={treatment.billingPrice}
+                                        onChange={(e) =>
+                                          handleBillingPriceChange(
+                                            index,
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border px-2 py-1 rounded-md text-center"
+                                      />
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-2">
+                                      <button
+                                        className="bg-red-500 text-white px-3 py-1 rounded"
+                                        onClick={() =>
+                                          handleRemoveTreatment(index)
+                                        }
+                                      >
+                                        Remove
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                        {/* Prescription Table */}
+                        <div className="mt-4">
+                          <p className="font-medium text-sm">Prescription:</p>
+                          <table className="mt-2 w-full table-auto text-sm border-collapse border border-gray-300">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                <th className="border-b px-4 py-2">Medicine</th>
+                                <th className="border-b px-4 py-2">Dose</th>
+                                <th className="border-b px-4 py-2">Timing</th>
+                                <th className="border-b px-4 py-2">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(prescriptions[appointment._id] || []).map(
+                                (prescription, index) => (
+                                  <tr key={index} className="hover:bg-gray-100">
+                                    <td className="border-b px-4 py-2">
+                                      <input
+                                        type="text"
+                                        value={prescription.medicine}
+                                        onChange={(e) =>
+                                          handlePrescriptionChange(
+                                            appointment._id,
+                                            index,
+                                            "medicine",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border px-2 py-1"
+                                      />
+                                    </td>
+                                    <td className="border-b px-4 py-2">
+                                      <input
+                                        type="text"
+                                        value={prescription.dose}
+                                        onChange={(e) =>
+                                          handlePrescriptionChange(
+                                            appointment._id,
+                                            index,
+                                            "dose",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border px-2 py-1"
+                                      />
+                                    </td>
+                                    <td className="border-b px-4 py-2">
+                                      <input
+                                        type="text"
+                                        value={prescription.timing}
+                                        onChange={(e) =>
+                                          handlePrescriptionChange(
+                                            appointment._id,
+                                            index,
+                                            "timing",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full border px-2 py-1"
+                                      />
+                                    </td>
+                                    <td className="border-b px-4 py-2">
+                                      <button
+                                        onClick={() =>
+                                          removePrescriptionRow(
+                                            appointment._id,
+                                            index
+                                          )
+                                        }
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        Delete
+                                      </button>
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                          <button
+                            onClick={() => addPrescriptionRow(appointment._id)}
+                            className="text-sm text-blue-600 hover:underline mt-4"
+                          >
+                            + Add Medicine
+                          </button>
+                        </div>
+                        {/* Instruction Text Area */}
+                        <div className="mt-4">
+                          <p className="font-medium text-sm mb-2">
+                            Instructions:
+                          </p>
+                          <textarea
+                            value={instructions[appointment._id] || ""}
+                            onChange={(e) =>
+                              handleInstructionChange(
+                                appointment._id,
+                                e.target.value
+                              )
+                            }
+                            rows="4"
+                            className="w-full border px-3 py-2 rounded-md"
+                            placeholder="Add any instructions for the patient..."
+                          ></textarea>
+                        </div>
+                      </>
                     )}
-
-                    {/* Instruction Text Area */}
-                    {(appointment.status === "Accepted" ||
-                      appointment.status === "Pending") && (
-                      <div className="mt-4">
-                        <p className="font-medium text-sm mb-2">
-                          Instructions:
-                        </p>
-                        <textarea
-                          value={instructions[appointment._id] || ""}
-                          onChange={(e) =>
-                            handleInstructionChange(
-                              appointment._id,
-                              e.target.value
-                            )
-                          }
-                          rows="4"
-                          className="w-full border px-3 py-2 rounded-md"
-                          placeholder="Add any instructions for the patient..."
-                        ></textarea>
-                      </div>
-                    )}
-
-                    {(appointment.status === "Accepted" ||
-                      appointment.status === "Pending") && (
-                      <div className="mt-4">
+                    {/* Complete Appointmnent Button */}
+                    <div className="mt-4 flex justify-evenly">
+                      {(appointment.status === "Accepted" ||
+                        appointment.status === "Pending") && (
                         <button
                           onClick={() =>
                             handleSubmit(patient?._id, appointment._id)
                           }
                           className="bg-primary text-white p-2 rounded-md"
                         >
-                          Submit Prescription
+                          Complete Appointment
                         </button>
-                      </div>
-                    )}
+                      )}
+                      {/* Close Button */}
+                      <button
+                        onClick={() => toggleExpand(rowIndex)}
+                        className={`bg-primary text-white p-2 rounded-md ${
+                          appointment.status === "Completed" ||
+                          appointment.status === "Cancelled"
+                            ? "mx-auto" 
+                            : ""
+                        }`}
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

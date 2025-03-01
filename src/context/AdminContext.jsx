@@ -48,7 +48,7 @@ export default function AdminContextProvider(props) {
   };
   const deleteDoctor = async (doctorId) => {
     try {
-      await axios.delete(`${backendUrl}/api/admin//remove-doctor/${doctorId}`, {
+      await axios.delete(`${backendUrl}/api/admin/remove-doctor/${doctorId}`, {
         headers: { Authorization: `Bearer ${aToken}` },
       });
 

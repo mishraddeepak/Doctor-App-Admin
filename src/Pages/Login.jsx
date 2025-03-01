@@ -13,44 +13,87 @@ export default function Login() {
   const { aToken, setAToken, backendUrl } = useContext(AdminContext);
   const { dToken,setDToken } = useContext(DoctorContext);
 
+  // const submitHandler = async (event) => {
+  //   event.preventDefault();
+
+  //   try {
+  //     if (state === "Admin") {
+  //       console.log("hii");
+  //       const { data } = await axios.post(`${backendUrl}/api/login`, {
+  //         email,
+  //         password,
+  //       });
+  //       if (data.user.role==="ADMIN") {
+  //         localStorage.setItem("aToken", data.accessToken);
+  //         setAToken(data.accessToken);
+  //       } else {
+  //         toast.error(data.message);
+  //       }
+  //     } else {
+  //       const { data } = await axios.post(`${backendUrl}/api/login`, {
+  //         email,
+  //         password,
+  //       });
+  //       console.log(data)
+  //       console.log(data.accessToken)
+  //       if (data.success) {
+  //         localStorage.setItem("dToken", data.
+  //           accessToken
+  //           );
+  //           localStorage.setItem("userId",data.user._id)
+  //         setDToken(data.accessToken);
+  //       } else {
+  //         toast.error(data.message);
+  //       }
+  //     }
+  //   } catch (error) {}
+  // };
+
   const submitHandler = async (event) => {
     event.preventDefault();
-
     try {
       if (state === "Admin") {
-        
-        console.log("hii");
+        console.log("Admin login attempt");
         const { data } = await axios.post(`${backendUrl}/api/login`, {
           email,
           password,
-          
         });
-      
-        if (data.user.role==="ADMIN") {
-          localStorage.setItem("aToken", data.accessToken);
-          setAToken(data.accessToken);
+        if (data.user.role === "ADMIN") {
+          localStorage.setItem("aToken", data.accessToken); 
+          setAToken(data.accessToken); 
+          toast.success("Admin login successful");
         } else {
-          toast.error(data.message);
+          toast.error("You are not authorized as an admin.");
         }
       } else {
-       
+        console.log("Doctor login attempt");
         const { data } = await axios.post(`${backendUrl}/api/login`, {
           email,
           password,
         });
-        console.log(data)
-        console.log(data.accessToken)
-        if (data.success) {
-          localStorage.setItem("dToken", data.
-            accessToken
-            );
-            localStorage.setItem("userId",data.user._id)
+        if (data.success && data.user.role==="DOCTOR") {
+          localStorage.setItem("dToken", data.accessToken);
+          localStorage.setItem("userId", data.user._id); 
           setDToken(data.accessToken);
+          console.log("hiii")
+          toast.success("Doctor login successful");
         } else {
-          toast.error(data.message);
+          toast.error("You are not authorised as doctor."); 
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      if (error.response) {
+        console.log(error)
+        console.log("Error response:", error.response.data);
+        toast.error(error.response.data.message);
+      } else if (error.request) {
+        console.log("No response received:", error.request);
+        toast.error("No response received from the server.");
+      } else {
+        console.log("Error:", error.message);
+        toast.error("An unexpected error occurred."); 
+      }
+    }
   };
 
   return (

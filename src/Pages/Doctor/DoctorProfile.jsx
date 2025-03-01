@@ -1,13 +1,15 @@
 import React, { useContext, useEffect } from "react";
 import { DoctorContext } from "../../context/DoctorContext";
-
+import { BsCurrencyRupee } from "react-icons/bs";
+import { MdMarkEmailRead } from "react-icons/md";
+import { CiMedicalCase } from "react-icons/ci";
 export default function DoctorProfile() {
  
   const { docProfile,backendUrl,getDoctorDetails } = useContext(DoctorContext);
   useEffect(() => {
     getDoctorDetails()
   }, []);
- 
+ console.log(docProfile)
   
   if (!docProfile) {
     return <div className="w-screen h-screen flex items-center justify-center">Loading profile...</div>;
@@ -19,7 +21,7 @@ export default function DoctorProfile() {
         {/* Profile Header */}
         <div className="flex items-center space-x-6 ">
           <img
-            src="https://via.placeholder.com/150"
+            src={docProfile.docImg}
             alt="Profile"
             className="w-24 h-24 rounded-full border shadow"
           />
@@ -42,21 +44,21 @@ export default function DoctorProfile() {
           <h2 className="text-xl font-medium text-gray-700">Details</h2>
           <div className="mt-2 text-gray-600">
             <p>
-              <strong>Email:</strong>{" "}
+              <strong>{<MdMarkEmailRead size={24} className="inline mx-1 text-blue-600 " />}Email:</strong>{" "}
               <span className="text-gray-800 font-semibold">
                 {docProfile.email}
               </span>
             </p>
             <p>
-              <strong>Experience:</strong>{" "}
+              <strong>{<CiMedicalCase size={24} className="inline text-blue-600 mx-1"/>}Experience:</strong>{" "}
               <span className="text-gray-800 font-semibold">
                 {docProfile.experience}
               </span>
             </p>
             <p>
-              <strong>Fees:</strong>{" "}
+              <strong>Fees({<BsCurrencyRupee className="inline"/>}):</strong>{" "}
               <span className="text-gray-800 font-semibold">
-                ${docProfile.fees}
+              {docProfile.fees}
               </span>
             </p>
             <p>

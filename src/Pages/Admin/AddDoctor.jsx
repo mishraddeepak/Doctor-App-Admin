@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { assets } from "../../assets/assets";
-import { useContext } from "react";
-import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
-// import { FaRupeeSign } from "react-icons/fa";
+
 export default function AddDoctor() {
   const [docImg, setDocImg] = useState(null);
   const [name, setName] = useState("");
@@ -19,19 +17,58 @@ export default function AddDoctor() {
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
   const [isHeadDoctor, setIsHeadDoctor] = useState(false);
-
+  const [add, setAdd] = useState(false);
+  const [medicalType, setMedicalType] = useState("");
+  const [treatmentName, setTreatmentName] = useState("");
+  const [actualPrice, setActualPrice] = useState("");
+  const [seeTreatMent, setSeeTreatment] = useState(false);
+  const [fetchedMedicalType, setFetchedMedicalType] = useState([]);
+  const [loading, setLoading] = useState(false); // Loading state
   const { backendUrl, aToken } = useContext(AdminContext);
-  console.log("backendurl", backendUrl);
+
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setDocImg(file);
   };
+  useEffect(() => {
+    if (seeTreatMent) {
+      const fetchMedicalType = async () => {
+        setLoading(true);
+        try {
+          const { data } = await axios.get(
+            `${backendUrl}/api/admin/all-treatment`
+          );
+          if (data.success) {
+            setFetchedMedicalType(data.data);
+          }
+        } catch (error) {
+          console.log(error.message);
+          toast.error("Failed to fetch treatments.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchMedicalType();
+    }
+  }, [seeTreatMent]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !experience ||
+      !fees ||
+      !speciality ||
+      !degree ||
+      !docImg
+    ) {
+      return toast.error("Fill all the fields");
+    }
     try {
+      console.log("hii");
       const formData = new FormData();
-      // formData.append("docImg", docImg);
       formData.append("name", name);
       formData.append("email", email);
       formData.append("password", password);
@@ -40,11 +77,18 @@ export default function AddDoctor() {
       formData.append("about", about);
       formData.append("speciality", speciality);
       formData.append("degree", degree);
-      formData.append("address1", address1);
-      formData.append("address2", address2);
+     
+
+      formData.append("address[line1]", address1);
+      formData.append("address[line2]", address2);
       formData.append("isHeadDoctor", isHeadDoctor);
+      console.log(docImg);
+      if(docImg){
+        formData.append("docImg", docImg);
+      }
+      
       formData.forEach((value, key) => {
-        console.log("form elements are...", `${key}:${value}`);
+        console.log(key, value);
       });
 
       const { data } = await axios.post(
@@ -57,9 +101,10 @@ export default function AddDoctor() {
           },
         }
       );
-      console.log("data is", data);
-      if (data.success) {
+      console.log(data)
+      if (data.message === "Doctor added successfully") {
         toast.success(data.message);
+        // Reset form fields
         setDocImg(null);
         setName("");
         setEmail("");
@@ -76,29 +121,264 @@ export default function AddDoctor() {
         toast.error(data.error);
       }
     } catch (error) {
-      toast.error(data.message);
+      toast.error("Failed to add doctor.");
     }
   };
+  const handleAddMedicalType = async (e) => {
+    e.preventDefault();
+    console.log(medicalType);
+    if (!medicalType || !treatmentName || !actualPrice) {
+      return toast.error(
+        "Please fill all fields: Medical Type, Treatment Name, and Actual Price."
+      );
+    }
+    const formData = {
+      medicalType,
+      treatmentName,
+      actualPrice: parseFloat(actualPrice),
+    };
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/admin/add-treatment`,
+        formData
+      );
+      if (data.message === "Treatment added successfully.") {
+        toast.success(data.message);
+        setActualPrice("");
+        setMedicalType("");
+        setTreatmentName("");
+        setAdd(false);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to add medical type.");
+    }
+  };
+  if (seeTreatMent) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="relative p-6 bg-white rounded-lg shadow-md w-full max-w-md max-h-[90vh] overflow-hidden">
+          <button
+            onClick={() => setSeeTreatment(false)}
+            className="absolute top-2 right-2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            ×
+          </button>
+          <h2 className="text-xl font-semibold mb-4">Treatment Details</h2>
+          <div className="overflow-y-auto max-h-[70vh] py-4">
+            {loading ? (
+              <p>Loading treatments...</p>
+            ) : (
+              <div className="space-y-4">
+                {fetchedMedicalType.map((treatment) => (
+                  <div key={treatment._id} className="border p-4 rounded-lg">
+                    <h3 className="text-lg font-medium">
+                      {treatment.medicalType}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Treatment Name:</span>{" "}
+                      {treatment.treatmentName}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Actual Price:</span>{" "}
+                      {treatment.actualPrice}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Created At:</span>{" "}
+                      {new Date(treatment.createdAt).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
+                    </p>
+                    {/* <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Updated At:</span>{" "}
+                      {new Date(treatment.createdAt).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
+                    </p> */}
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Treatment ID:</span>{" "}
+                      {treatment.Treatment_Id}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  if (add) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="relative p-6 bg-white rounded-lg shadow-md w-full max-w-md">
+          <button
+            onClick={() => setAdd(false)}
+            className="absolute top-2 right-2 p-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            ×
+          </button>
+
+          <h2 className="text-xl font-semibold mb-4">Add Medical Type</h2>
+
+          <form onSubmit={handleAddMedicalType}>
+            <div className="mb-4">
+              <label
+                htmlFor="medicalType"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Medical Type
+              </label>
+              <select
+                value={medicalType}
+                onChange={(e) => setMedicalType(e.target.value)}
+                id="medicalType"
+                name="medicalType"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="" disabled>
+                  Select a medical type
+                </option>
+                {[
+                  "Not Decided",
+                  "Cardiology",
+                  "Neurology",
+                  "Orthopedics",
+                  "Pediatrics",
+                  "Gastroenterology",
+                  "Dermatology",
+                  "Oncology",
+                  "Endocrinology",
+                  "Psychiatry",
+                  "Gynecology and Obstetrics",
+                  "Pulmonology",
+                  "Urology",
+                  "Hematology",
+                  "Ophthalmology",
+                  "Otolaryngology",
+                  "Nephrology",
+                  "Rheumatology",
+                ].map((option, index) => (
+                  <option key={index} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label
+                htmlFor="treatmentName"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Treatment Name
+              </label>
+              <input
+                type="text"
+                value={treatmentName}
+                onChange={(e) => setTreatmentName(e.target.value)}
+                id="treatmentName"
+                name="treatmentName"
+                placeholder="Enter treatment name"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label
+                htmlFor="actualPrice"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Actual Price
+              </label>
+              <input
+                value={actualPrice}
+                onChange={(e) => setActualPrice(e.target.value)}
+                type="number"
+                id="actualPrice"
+                name="actualPrice"
+                placeholder="Enter actual price"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                type="submit"
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+  const specialities = [
+    "Not Decided",
+    "Cardiology",
+    "Neurology",
+    "Orthopedics",
+    "Pediatrics",
+    "Gastroenterology",
+    "Dermatology",
+    "Oncology",
+    "Endocrinology",
+    "Psychiatry",
+    "Gynecology and Obstetrics",
+    "Pulmonology",
+    "Urology",
+    "Hematology",
+    "Ophthalmology",
+    "Otolaryngology",
+    "Nephrology",
+    "Rheumatology",
+  ];
   return (
     <form className="m-5 w-full" onSubmit={handleSubmit}>
-      <p className="mb-3 text-lg font-medium">Add Doctor</p>
+      <p className="mb-3 text-lg font-medium flex justify-between items-center">
+        Add Doctor
+        <h5
+          onClick={() => setAdd(!add)}
+          className="text-blue-500 hover:underline px-4"
+        >
+          Add Medical Type+
+        </h5>
+        <h5
+          onClick={() => setSeeTreatment(!seeTreatMent)}
+          className="text-blue-500 hover:underline px-4"
+        >
+          See All Treatments
+        </h5>
+      </p>
       <div className="bg-white px-8 py-8 border rounded w-full max-w-4xl max-h-[80vh] overflow-scroll">
         <div>
-          <label htmlFor="doc-img">
+          <label htmlFor="doc-img" className="cursor-pointer">
             <img
-              className="w-16 bg-gray-100 rounded-full cursor-pointer"
+              className="w-20 bg-gray-100 rounded-full"
               src={docImg ? URL.createObjectURL(docImg) : assets.upload_area}
               alt="Doctor"
             />
           </label>
           <input
-            className="border rounded px-3 py-2"
             type="file"
             id="doc-img"
-            hidden
+            className="hidden"
             onChange={handleFileChange}
           />
+          {/* Paragraph is outside the label */}
           <p>
             Upload doctor
             <br /> picture
@@ -157,7 +437,6 @@ export default function AddDoctor() {
             <div className="flex-1 flex flex-col gap-1">
               <p>Fees:</p>
               <div className="relative">
-                {/* <FaRupeeSign className="absolute top-1/2 -left-0 transform -translate-y-1/2 text-gray-500 text-sm" /> */}
                 <input
                   className="border rounded px-3 py-2"
                   type="number"
@@ -177,41 +456,11 @@ export default function AddDoctor() {
                 value={speciality}
                 onChange={(e) => setSpeciality(e.target.value)}
               >
-                <option value="General Physician">General Physician</option>
-                <option value="Gynecologist">Gynecologist</option>
-                <option value="Pediatrician">Pediatrician</option>
-                <option value="Cardiologist">Cardiologist</option>
-                <option value="Dermatologist">Dermatologist</option>
-                <option value="Endocrinologist">Endocrinologist</option>
-                <option value="Gastroenterologist">Gastroenterologist</option>
-                <option value="Neurologist">Neurologist</option>
-                <option value="Oncologist">Oncologist</option>
-                <option value="Orthopedic Surgeon">Orthopedic Surgeon</option>
-                <option value="Ophthalmologist">Ophthalmologist</option>
-                <option value="Psychiatrist">Psychiatrist</option>
-                <option value="Pulmonologist">Pulmonologist</option>
-                <option value="Radiologist">Radiologist</option>
-                <option value="Urologist">Urologist</option>
-                <option value="Anesthesiologist">Anesthesiologist</option>
-                <option value="Rheumatologist">Rheumatologist</option>
-                <option value="Nephrologist">Nephrologist</option>
-                <option value="Pathologist">Pathologist</option>
-                <option value="Hematologist">Hematologist</option>
-                <option value="ENT Specialist">ENT Specialist</option>
-                <option value="Plastic Surgeon">Plastic Surgeon</option>
-                <option value="General Surgeon">General Surgeon</option>
-                <option value="Dentist">Dentist</option>
-                <option value="Chiropractor">Chiropractor</option>
-                <option value="Physiotherapist">Physiotherapist</option>
-                <option value="Dietitian/Nutritionist">
-                  Dietitian/Nutritionist
-                </option>
-                <option value="Speech Therapist">Speech Therapist</option>
-                <option value="Occupational Therapist">
-                  Occupational Therapist
-                </option>
-                <option value="Psychologist">Psychologist</option>
-                <option value="Obstetrician">Obstetrician</option>
+                {specialities.map((speciality, index) => (
+                  <option key={index} value={speciality}>
+                    {speciality}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex-1 flex flex-col gap-1">
@@ -255,7 +504,6 @@ export default function AddDoctor() {
             onChange={(e) => setAbout(e.target.value)}
           />
         </div>
-        {/* Head Doctor Checkbox */}
         <div className="mt-4 flex items-center gap-2">
           <input
             type="checkbox"

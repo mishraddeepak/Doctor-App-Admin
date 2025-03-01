@@ -12,7 +12,7 @@ export default function DoctorsList() {
       getAllDoctors();
     }
   }, [aToken,]);
-
+console.log(doctors)
   const handleDelete = (doctorId) => {
     if (window.confirm("Are you sure you want to delete this doctor?")) {
       deleteDoctor(doctorId);
@@ -20,7 +20,7 @@ export default function DoctorsList() {
   };
 
   const handleUpdate = (doctorId) => {
-    navigate(`/update-doctor/${doctorId}`); // Navigate to the update page with doctorId in the URL
+    navigate(`/update-doctor/${doctorId}`);
   };
 
   return (
@@ -31,7 +31,7 @@ export default function DoctorsList() {
           <div className="border border-indigo-200 rounded-xl max-w-56 overflow-hidden cursor-pointer" key={index}>
             <img
               className="bg-indigo-50 group-hover:bg-primary transition-all duration-500"
-              src={assets.doc9}
+              src={item.docImg}
               alt="Doctor"
             />
             <div className="p-4">

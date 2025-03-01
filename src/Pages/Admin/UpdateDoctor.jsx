@@ -6,8 +6,8 @@ import axios from "axios";
 import { assets } from "../../assets/assets";
 
 export default function UpdateDoctor() {
-  const { doctorId } = useParams(); // Extract doctorId from the URL
-  const { backendUrl } = useContext(AdminContext);
+  const { doctorId } = useParams(); 
+  const { backendUrl,getAllDoctors,doctors } = useContext(AdminContext);
 
   const [docImg, setDocImg] = useState(null);
   const [name, setName] = useState("");
@@ -21,13 +21,17 @@ export default function UpdateDoctor() {
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
 
-  // Fetching the doctor's details on component mount
+  useEffect(()=>{
+    getAllDoctors()
+  },[])
+ 
   useEffect(() => {
     const fetchDoctorDetails = async () => {
       try {
-        const { data } = await axios.get(`${backendUrl}/api/admin/doctor/${doctorId}`);
-        if (data.success) {
-          const doctor = data.doctor;
+        const doctorArr = doctors.filter(doctor=>doctor._id==doctorId)
+        const doctor = doctorArr[0]
+        console.log(doctor)
+        if (doctor) {
           setName(doctor.name || "");
           setEmail(doctor.email || "");
           setExperience(doctor.experience || "1 Year");
@@ -35,9 +39,9 @@ export default function UpdateDoctor() {
           setAbout(doctor.about || "");
           setSpeciality(doctor.speciality || "General Physician");
           setDegree(doctor.degree || "");
-          setAddress1(doctor.address1 || "");
-          setAddress2(doctor.address2 || "");
-          setDocImg(doctor.profileImage || null); // If URL is provided
+          setAddress1(doctor.address.line1 || "");
+          setAddress2(doctor.address.line2 || "");
+          setDocImg(doctor.docImg || null); // If URL is provided
         } else {
           toast.error("Failed to fetch doctor details");
         }
@@ -47,49 +51,73 @@ export default function UpdateDoctor() {
     };
 
     fetchDoctorDetails();
-  }, [backendUrl, doctorId]);
-
+  }, [doctors]);
   // Handling file input
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setDocImg(file);
   };
-
   // Handling form submission to update doctor details
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-        console.log(doctorId)
       const formData = new FormData();
       if (docImg) formData.append("docImg", docImg);
       formData.append("name", name);
       formData.append("email", email);
-      if (password) formData.append("password", password); // Optional for updates
+      if (password) formData.append("password", password); 
       formData.append("experience", experience);
       formData.append("fees", fees);
       formData.append("about", about);
       formData.append("speciality", speciality);
       formData.append("degree", degree);
-      formData.append("address1", address1);
-      formData.append("address2", address2);
-
-      // Sending PUT request to update doctor details
-      console.log("hellohiii",formData)
+      formData.append("address[line1]", address1);
+      formData.append("address[line2]", address2);
+  
       const { data } = await axios.put(
         `${backendUrl}/api/admin/update-doctor/${doctorId}`,
-        formData
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-
-      if (data.success) {
+      if (data.message === "Doctor updated successfully") {
         toast.success("Doctor details updated successfully");
       } else {
-        toast.error(data.error);
+        toast.error(data.error || "Failed to update doctor details");
       }
     } catch (error) {
-      toast.error("An error occurred while updating doctor details");
+      console.error("Error updating doctor:", error);
+  
+      if (error.response) {
+        toast.error(error.response.data.message || "Failed to update doctor details");
+      } else {
+        toast.error("An error occurred. Please try again later.");
+      }
     }
   };
-
+  const specialities = [
+    "Not Decided",
+    "Cardiology",
+    "Neurology",
+    "Orthopedics",
+    "Pediatrics",
+    "Gastroenterology",
+    "Dermatology",
+    "Oncology",
+    "Endocrinology",
+    "Psychiatry",
+    "Gynecology and Obstetrics",
+    "Pulmonology",
+    "Urology",
+    "Hematology",
+    "Ophthalmology",
+    "Otolaryngology",
+    "Nephrology",
+    "Rheumatology",
+  ];
   return (
     <form className="m-5 w-full" onSubmit={handleSubmit}>
       <p className="mb-3 text-lg font-medium">Update Doctor</p>
@@ -99,7 +127,13 @@ export default function UpdateDoctor() {
           <label htmlFor="doc-img">
             <img
               className="w-16 bg-gray-100 rounded-full cursor-pointer"
-              src={docImg ? (typeof docImg === "string" ? docImg : URL.createObjectURL(docImg)) : assets.upload_area}
+              src={
+                docImg
+                  ? typeof docImg === "string"
+                    ? docImg
+                    : URL.createObjectURL(docImg)
+                  : assets.upload_area
+              }
               alt="Doctor"
             />
           </label>
@@ -118,7 +152,9 @@ export default function UpdateDoctor() {
 
         {/* Form Fields */}
         <div className="mb-4">
-          <label htmlFor="name" className="text-sm">Name</label>
+          <label htmlFor="name" className="text-sm">
+            Name
+          </label>
           <input
             id="name"
             type="text"
@@ -129,7 +165,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="email" className="text-sm">Email</label>
+          <label htmlFor="email" className="text-sm">
+            Email
+          </label>
           <input
             id="email"
             type="email"
@@ -140,7 +178,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="password" className="text-sm">Password (optional)</label>
+          <label htmlFor="password" className="text-sm">
+            Password (optional)
+          </label>
           <input
             id="password"
             type="password"
@@ -151,7 +191,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="experience" className="text-sm">Experience</label>
+          <label htmlFor="experience" className="text-sm">
+            Experience
+          </label>
           <input
             id="experience"
             type="text"
@@ -162,7 +204,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="fees" className="text-sm">Fees</label>
+          <label htmlFor="fees" className="text-sm">
+            Fees
+          </label>
           <input
             id="fees"
             type="number"
@@ -172,51 +216,24 @@ export default function UpdateDoctor() {
           />
         </div>
 
-        
-
+        <div className="flex-1 flex flex-col gap-1">
+              <p>Speciality</p>
+              <select
+                className="border rounded px-3 py-2"
+                value={speciality}
+                onChange={(e) => setSpeciality(e.target.value)}
+              >
+                {specialities.map((speciality, index) => (
+                  <option key={index} value={speciality}>
+                    {speciality}
+                  </option>
+                ))}
+              </select>
+            </div>
         <div className="mb-4">
-          <label htmlFor="speciality" className="text-sm">Speciality</label>
-          <select
-            id="speciality"
-            className="border rounded-md p-3 w-full"
-            value={speciality}
-            onChange={(e) => setSpeciality(e.target.value)}
-          >
-          <option value="General Physician">General Physician</option>
-<option value="Gynecologist">Gynecologist</option>
-<option value="Pediatrician">Pediatrician</option>
-<option value="Cardiologist">Cardiologist</option>
-<option value="Dermatologist">Dermatologist</option>
-<option value="Endocrinologist">Endocrinologist</option>
-<option value="Gastroenterologist">Gastroenterologist</option>
-<option value="Neurologist">Neurologist</option>
-<option value="Oncologist">Oncologist</option>
-<option value="Orthopedic Surgeon">Orthopedic Surgeon</option>
-<option value="Ophthalmologist">Ophthalmologist</option>
-<option value="Psychiatrist">Psychiatrist</option>
-<option value="Pulmonologist">Pulmonologist</option>
-<option value="Radiologist">Radiologist</option>
-<option value="Urologist">Urologist</option>
-<option value="Anesthesiologist">Anesthesiologist</option>
-<option value="Rheumatologist">Rheumatologist</option>
-<option value="Nephrologist">Nephrologist</option>
-<option value="Pathologist">Pathologist</option>
-<option value="Hematologist">Hematologist</option>
-<option value="ENT Specialist">ENT Specialist</option>
-<option value="Plastic Surgeon">Plastic Surgeon</option>
-<option value="General Surgeon">General Surgeon</option>
-<option value="Dentist">Dentist</option>
-<option value="Chiropractor">Chiropractor</option>
-<option value="Physiotherapist">Physiotherapist</option>
-<option value="Dietitian/Nutritionist">Dietitian/Nutritionist</option>
-<option value="Speech Therapist">Speech Therapist</option>
-<option value="Occupational Therapist">Occupational Therapist</option>
-<option value="Psychologist">Psychologist</option>
-<option value="Obstetrician">Obstetrician</option></select>
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="degree" className="text-sm">Degree</label>
+          <label htmlFor="degree" className="text-sm">
+            Degree
+          </label>
           <input
             id="degree"
             type="text"
@@ -227,7 +244,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="address1" className="text-sm">Address 1</label>
+          <label htmlFor="address1" className="text-sm">
+            Address 1
+          </label>
           <input
             id="address1"
             type="text"
@@ -238,7 +257,9 @@ export default function UpdateDoctor() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="address2" className="text-sm">Address 2</label>
+          <label htmlFor="address2" className="text-sm">
+            Address 2
+          </label>
           <input
             id="address2"
             type="text"
@@ -248,7 +269,9 @@ export default function UpdateDoctor() {
           />
         </div>
         <div className="mb-4">
-          <label htmlFor="about" className="text-sm">About</label>
+          <label htmlFor="about" className="text-sm">
+            About
+          </label>
           <textarea
             id="about"
             className="border rounded-md p-3 w-full"
