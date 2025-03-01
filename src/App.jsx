@@ -22,12 +22,11 @@ export default function App() {
   const { aToken } = useContext(AdminContext);
   const { dToken } = useContext(DoctorContext);
 
-
   console.log(dToken);
   return aToken || dToken ? (
     <div className="bg-[#F8F9FD]">
       <ToastContainer />
-      <Navbar/>
+      <Navbar />
       <div className="flex items-start">
         <Sidebar />
         <Routes>
@@ -46,21 +45,21 @@ export default function App() {
     </div>
   ) : (
     <>
-     <div className='flex justify-between items-center px-4 sm:px-10 py-3 border-b bg-white'>
-      <div className='flex items-center gap-2 text-xs'>
-        {/* <img className='w-36 sm:w-40 cursor-pointer' src={assets.admin_logo} alt="" /> */}
-        <div className="w-44 cursor-pointer text-3xl font-semibold text-blue-500">
-    MediHome
-</div>
+      <div className="flex justify-between items-center px-4 sm:px-10 py-3 border-b bg-white">
+        <div className="flex items-center gap-2 text-xs">
+          <img className='w-36 sm:w-40 cursor-pointer' src={assets.admin_logo} alt="" />
+          {/* <div className="w-44 cursor-pointer text-3xl font-semibold text-blue-500">
+            MediHome
+          </div> */}
 
-        {/* <p className='border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600'>{aToken?"Admin":"Doctor"}</p> */}
+          {/* <p className='border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600'>{aToken?"Admin":"Doctor"}</p> */}
+        </div>
+        <a href="http://localhost:5173/" rel="noopener noreferrer">
+          <button className="bg-primary text-white text-sm px-10 py-2 rounded-full">
+            Patient
+          </button>
+        </a>
       </div>
-      <a href="http://localhost:5176/"  rel="noopener noreferrer">
-    <button className="bg-primary text-white text-sm px-10 py-2 rounded-full">
-      Patient
-    </button>
-  </a>
-    </div>
       <Login />
 
       <ToastContainer />
