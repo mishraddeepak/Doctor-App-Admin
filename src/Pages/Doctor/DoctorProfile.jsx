@@ -3,6 +3,8 @@ import { DoctorContext } from "../../context/DoctorContext";
 import { BsCurrencyRupee } from "react-icons/bs";
 import { MdMarkEmailRead } from "react-icons/md";
 import { CiMedicalCase } from "react-icons/ci";
+import { FcGraduationCap } from "react-icons/fc";
+import { FaHouse } from "react-icons/fa6";
 export default function DoctorProfile() {
  
   const { docProfile,backendUrl,getDoctorDetails } = useContext(DoctorContext);
@@ -56,25 +58,25 @@ export default function DoctorProfile() {
               </span>
             </p>
             <p>
-              <strong>Fees({<BsCurrencyRupee className="inline"/>}):</strong>{" "}
+              <strong>{<BsCurrencyRupee size={24} className="inline text-blue-600 mx-1"/>}Fees:</strong>{" "}
               <span className="text-gray-800 font-semibold">
               {docProfile.fees}
               </span>
             </p>
             <p>
-              <strong>Degree:</strong>{" "}
+              <strong>{<FcGraduationCap size={24} className="inline text-blue-600 mx-1"/>}Degree:</strong>{" "}
               <span className="text-gray-800 font-semibold">
                 {docProfile.degree}
               </span>
             </p>
             <p>
-              <strong>Address 1:</strong>{" "}
+              <strong>{<FaHouse size={24} className="inline text-blue-600 mx-1"/>}Address 1:</strong>{" "}
               <span className="text-gray-800 font-semibold">
                 {docProfile?.address?.line1}
               </span>
             </p>
             <p>
-              <strong>Address 2:</strong>{" "}
+              <strong>{<FaHouse size={24} className="inline text-blue-600 mx-1"/>}Address 2:</strong>{" "}
               <span className="text-gray-800 font-semibold">
                 {docProfile?.address?.line2 || "N/A"}
               </span>

@@ -181,8 +181,8 @@ export default function AllAppointmentsUI() {
 
   const handleSubmit = async (patientId, appointmentId) => {
     const prescriptionData = {
-      // prescriptions: prescriptions[appointmentId] || [],
-      // instruction: instructions[appointmentId] || "",
+      prescriptions: prescriptions[appointmentId] || [],
+      instruction: instructions[appointmentId] || "",
       appointmentId,
       selectedTreatments: treatmentDataForBackend,
       status: "Completed",
@@ -294,7 +294,7 @@ export default function AllAppointmentsUI() {
                     <p className="font-medium text-gray-700 mb-3">
                       Contact No:{" "}
                       <span>
-                        {patient?.phone || "No additional details provided."}
+                        {appointment?.patientId?.phone || "No additional details provided."}
                       </span>
                     </p>
                     <p className="font-medium">

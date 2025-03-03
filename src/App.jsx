@@ -54,7 +54,7 @@ export default function App() {
 
           {/* <p className='border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600'>{aToken?"Admin":"Doctor"}</p> */}
         </div>
-        <a href="http://localhost:5173/" rel="noopener noreferrer">
+        <a href="http://3.109.210.85" rel="noopener noreferrer">
           <button className="bg-primary text-white text-sm px-10 py-2 rounded-full">
             Patient
           </button>
