@@ -83,8 +83,8 @@ export default function UpdateDoctor() {
           },
         }
       );
-      if (data.message === "Doctor updated successfully") {
-        toast.success("Doctor details updated successfully");
+      if (data.success) {
+        toast.success(data.message);
       } else {
         toast.error(data.error || "Failed to update doctor details");
       }

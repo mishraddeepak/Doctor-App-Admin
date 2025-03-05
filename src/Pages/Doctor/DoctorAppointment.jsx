@@ -117,8 +117,8 @@ export default function AllAppointmentsUI() {
 
   const handleMedicalType = async (medicalType) => {
     console.log("MedicalType:", medicalType);
-    if (data.success) {
-      setGivenTreatment(data.data);
+    if (data?.success) {
+      setGivenTreatment(data?.data);
     }
   };
   useEffect(() => {

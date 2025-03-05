@@ -102,7 +102,7 @@ export default function AddDoctor() {
         }
       );
       console.log(data)
-      if (data.message === "Doctor added successfully") {
+      if (data.message) {
         toast.success(data.message);
         // Reset form fields
         setDocImg(null);
@@ -118,10 +118,11 @@ export default function AddDoctor() {
         setAddress2("");
         setIsHeadDoctor(false);
       } else {
-        toast.error(data.error);
+        toast.error(data.message);
       }
     } catch (error) {
-      toast.error("Failed to add doctor.");
+      console.log(error)
+      toast.error(error.response.data.message);
     }
   };
   const handleAddMedicalType = async (e) => {
