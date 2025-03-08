@@ -31,15 +31,15 @@ export default function App() {
         <Sidebar />
         <Routes>
           {/* adminRoute */}
-          <Route path="/" element={<></>} />
-          <Route path="/admin-dashboard" element={<Dashboard />} />
-          <Route path="/all-appointments" element={<AllAppointments />} />
-          <Route path="/add-doctor" element={<AddDoctor />} />
-          <Route path="/doctors-list" element={<DoctorsList />} />
-          <Route path="/update-doctor/:doctorId" element={<UpdateDoctor />} />
+          <Route path="/authority" element={<></>} />
+          <Route path="/authority/admin-dashboard" element={<Dashboard />} />
+          <Route path="/authority/all-appointments" element={<AllAppointments />} />
+          <Route path="/authority/add-doctor" element={<AddDoctor />} />
+          <Route path="/authority/doctors-list" element={<DoctorsList />} />
+          <Route path="/authority/update-doctor/:doctorId" element={<UpdateDoctor />} />
           {/* doctorRoute */}
-          <Route path="/doctor-appointments" element={<DoctorAppointment />} />
-          <Route path="/doctor-profile" element={<DoctorProfile />} />
+          <Route path="/authority/doctor-appointments" element={<DoctorAppointment />} />
+          <Route path="/authority/doctor-profile" element={<DoctorProfile />} />
         </Routes>
       </div>
     </div>
